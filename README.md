@@ -1,3 +1,3 @@
 # MultiDimensionalDataStructures
-project on multi demensional data structure within elective course of CEID 
+project on multi dimensional data structure within elective course of CEID 
 
