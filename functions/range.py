@@ -1,9 +1,12 @@
 import json
+import time
 from typing import Any
 
 index = {3: "dblp", 2: "name", 1: "awards"}
 
 #d = {3: "name", 2: "dblp", 1: "awards"}
+
+#================================================================================================
 
 class DataPoint:
 
@@ -23,10 +26,12 @@ class DataPoint:
     
     def __getitem__(self, key: str):
         return self.data[key]
+    
+#================================================================================================
 
 class RangeTreeNode:
 
-    def __init__(self, value: int, data: list[DataPoint], left: "RangeTreeNode" = None, right: "RangeTreeNode" = None):
+    def __init__(self, value: int|str, data: list[DataPoint], parent: "RangeTreeNode" = None, left: "RangeTreeNode" = None, right: "RangeTreeNode" = None):
         self.left = left
         self.right = right
 
@@ -35,8 +40,15 @@ class RangeTreeNode:
 
         self.alt_tree: RangeTree = None
 
+        #AVL Stuff
+        self.parent = parent
+        self.height = 0
+        self.hb = 0
+
     def __str__(self):
-        return f"{self.data}"
+        return f"Address: {id(self)}\nValue: {self.data}"
+    
+#================================================================================================
     
 class RangeTree:
     '''
@@ -69,6 +81,8 @@ class RangeTree:
         if dimension > 1:
             self.create_alt_trees(self.root)
 
+    #================================================================================================
+
     def create_alt_trees(self, node: RangeTreeNode):
         
         if node.left is None:
@@ -86,11 +100,14 @@ class RangeTree:
         
         return leaves
 
+    #================================================================================================
 
     def search(self, search_value: int,  start_node: RangeTreeNode = None, report: str = None) -> RangeTreeNode:
         '''
         Arguments:
-            search_value: The value to search for
+            - search_value: The value to search for
+            - start_node: Subtree where the search begins. Set None for root
+            - report: Report subtrees in the search path. Either "left" or "right". 
 
         Returns:
             node: The tree node where the search ended
@@ -116,8 +133,39 @@ class RangeTree:
             return current_node
         else:
             return current_node, path
+        
+    #================================================================================================
+        
+    def find_smallest(self) -> RangeTreeNode:
+        '''
+        Returns the node with the smallest value in the search tree
+        '''
+
+        current_node = self.root
+
+        while current_node.left is not None:
+            current_node = current_node.left
+
+        return current_node
+    
+    #================================================================================================
+        
+    def find_biggest(self) -> RangeTreeNode:
+        '''
+        Returns the node with the biggest value in the search tree
+        '''
+
+        current_node = self.root
+
+        while current_node.right is not None:
+            current_node = current_node.right
+
+        return current_node
+
+    #================================================================================================
     
     def find_split_node(self, x1, x2) -> RangeTreeNode:
+
         split_node = self.root
 
         while split_node.left is not None: #When both paths are common and we reach a leaf
@@ -131,6 +179,8 @@ class RangeTree:
                 break
 
         return split_node
+    
+    #================================================================================================
     
     def report_leaves(self, node: RangeTreeNode = None) -> list[RangeTreeNode]:
         if node == None:
@@ -147,8 +197,32 @@ class RangeTree:
             result = result + self.report_leaves(node.right)
 
         return result
+    
+    #================================================================================================
 
     def range_search(self, x1, x2) -> list[RangeTreeNode]:
+        '''
+            A method for executing inclusive range queries
+
+            Parameters:
+            - x1: Lower bound
+            - x2: Upper bound
+
+            Setting any of the parameters as None will make the query one-sided
+
+            Setting both parameters as None functions as a "Don't Care" (return everything)
+
+            Returns: A list of RangeTreeNodes (the subtrees whose leaves contain the answer).
+            The subtrees are guaranteed to return the answer in ascending order
+        '''
+
+        
+        #Preprocessing
+        if x1 is None:
+            x1 = self.find_smallest().value
+        
+        if x2 is None:
+            x2 = self.find_biggest().value
 
         result = []
 
@@ -187,11 +261,170 @@ class RangeTree:
             result.append(s2)
 
         return result
+    
+    #================================================================================================
 
+    def left_rotation(self, node: RangeTreeNode):
+        '''
+        Performs a left rotation on the node passed as a parameter
+
+        Returns: The node that took its place in the tree after the rotation (the original right child)
+        '''
+
+        child = node.right
+        parent = node.parent
+
+        #Step 1: The parent needs to have the child node as its new child
+        if parent is not None:
+            if node == parent.left:
+                parent.left = child
+            elif node == parent.right:
+                parent.right = child
+
+            child.parent = parent
+
+        else: #node is the root
+            child.parent = None
+            self.root = child
+
+        #Step 2: Original node needs to get child node's left subtree as its new right subtree
+        node.right = child.left
+        child.left.parent = node
+
+        #Step 3: Child becomes the parent
+        child.left = node
+        node.parent = child
+
+        #Update heights and hb starting from the lowest node (node, then child)
+        node.height = max(node.left.height, node.right.height) + 1
+        node.hb = node.right.height - node.left.height
+
+        child.height = max(child.left.height, child.right.height) + 1
+        child.hb = child.right.height - child.left.height
+
+        return child
+    
+    #================================================================================================
+
+    def right_rotation(self, node: RangeTreeNode):
+        '''
+        Performs a right rotation on the node passed as a parameter
+
+        Returns: The node that took its place in the tree after the rotation (the original left child)
+        '''
+
+        child = node.left
+        parent = node.parent
+
+        #Step 1: The parent needs to have the child node as its new child
+        if parent is not None:
+            if node == parent.left:
+                parent.left = child
+            elif node == parent.right:
+                parent.right = child
+
+            child.parent = parent
+
+        else: #node is the root
+            child.parent = None
+            self.root = child
+
+        #Step 2: Original node needs to get child node's right subtree as its new left subtree
+        node.left = child.right
+        child.right.parent = node
+
+        #Step 3: Child becomes the parent
+        child.right = node
+        node.parent = child
+
+        #Update heights and hb starting from the lowest node (node, then child)
+        node.height = max(node.left.height, node.right.height) + 1
+        node.hb = node.right.height - node.left.height
+
+        child.height = max(child.left.height, child.right.height) + 1
+        child.hb = child.right.height - child.left.height
+
+        return child
+    
+    #================================================================================================
+
+    def left_right_rotation(self, node: RangeTreeNode):
+        '''
+        Performs a left-right rotation on the node passed as a parameter
+
+        Returns: The node that took its place in the tree after the rotation
+        '''
+
+        self.right_rotation(node.right)
+        return self.left_rotation(node)
+    
+    #================================================================================================
+
+    def right_left_rotation(self, node: RangeTreeNode):
+        '''
+        Performs a right-left rotation on the node passed as a parameter
+
+        Returns: The node that took its place in the tree after the rotation
+        '''
+
+        self.left_rotation(node.left)
+        return self.right_rotation(node)
+    
+    #================================================================================================
+    
+    def balance(self, node):
+        '''
+        Starts moving upwards in the tree, updating heights and balances. Performs rotation where necessary
+
+        node is a leaf's parent. It's the node where the search ended during an insertion
+        '''
+
+        node.height = 1
+
+        current_node = node.parent
+        previous_node = node
+
+        while current_node is not None:
+
+            current_node.height = max(current_node.left.height, current_node.right.height) + 1
+            current_node.hb = current_node.right.height - current_node.left.height
+
+            if current_node.hb == 0:
+                break
+
+            elif current_node.hb == 2:
+
+                if previous_node.hb == 1:
+                    self.left_rotation(current_node)
+
+                elif previous_node.hb == -1:
+                    self.left_right_rotation(current_node)
+
+                break
+
+            elif current_node.hb == -2:
+
+                if previous_node.hb == -1:
+                    self.right_rotation(current_node)
+
+                elif previous_node.hb == 1:
+                    self.right_left_rotation(current_node)
+
+                break
+
+            previous_node = current_node
+            current_node = current_node.parent
+
+            
+    #================================================================================================
 
     def insert(self, x: DataPoint) -> None:
 
         value = x[index[self.dimension]]
+
+        #For names, use lastname for indexing
+        if type(value) is str:
+            value = value.split()[-1]
 
         if self.root == None:
             self.root = RangeTreeNode(value, [x])
@@ -201,19 +434,38 @@ class RangeTree:
             if value == leaf.value:
                 leaf.data.append(x)
             elif value < leaf.value:
-                leaf.left = RangeTreeNode(value, [x])
-                leaf.right = RangeTreeNode(leaf.value, leaf.data)
+                leaf.left = RangeTreeNode(value, [x], leaf)
+                leaf.right = RangeTreeNode(leaf.value, leaf.data, leaf)
 
                 leaf.value = value
                 leaf.data = None
+
+                #self.balance(leaf)
             else:
-                leaf.left = RangeTreeNode(leaf.value, leaf.data)
-                leaf.right = RangeTreeNode(value, [x])
+                leaf.left = RangeTreeNode(leaf.value, leaf.data, leaf)
+                leaf.right = RangeTreeNode(value, [x], leaf)
 
                 leaf.data = None
 
-    def query_driver(self, q1: int | list[int] | None, q2: str | list[str] | None, q3: int | list[int] | None) -> list[RangeTreeNode]:
+                #self.balance(leaf)
 
+    #================================================================================================
+
+    def query_driver(self, q1: int | list[int] | None, q2: str | list[str] | None, q3: int | list[int] | None) -> list[DataPoint]:
+        '''
+            An interface for executing queries. Accepts 3 parameters, one for each dimension.
+
+            Accepted types:
+            - int/ str for exact match
+            - list for range query
+                - [int/str, int/str] for two-sided range query
+                - Putting None in any side will make the query one-sided
+                - [None, None] is equivalent to just None
+            - None means "ignore this dimension"
+
+            Returns:
+            A list of DataPoints that belong in the answer
+        '''
         q = None
 
         if self.dimension == 3:
@@ -236,9 +488,10 @@ class RangeTree:
                 return None
         elif q is None: #Don't care for this dimension
             if self.dimension > 1:
+                #print(self.dimension, "DONT CARE")
                 return self.root.alt_tree.query_driver(q1, q2, q3)
             else:
-                return self.report_leaves()
+                return [dp for leaf in self.report_leaves() for dp in leaf.data]
 
         for node in local_res:
             if self.dimension > 1:
@@ -246,10 +499,11 @@ class RangeTree:
                 if next_dim_res is not None:
                     res = res + next_dim_res
             else:
-                res = res + self.report_leaves(node)
+                res = res + [dp for leaf in self.report_leaves(node) for dp in leaf.data]
 
         return res
         
+    #================================================================================================
 
     def traverse_inorder(self, node: RangeTreeNode):
         if node == None:
@@ -258,6 +512,8 @@ class RangeTree:
         self.traverse_inorder(node.left)
         print(node.value)
         self.traverse_inorder(node.right)
+
+    #================================================================================================
 
     def traverse_preorder(self, node: RangeTreeNode = None):
         if node == None:
@@ -271,11 +527,18 @@ class RangeTree:
         if node.right is not None:
             self.traverse_preorder(node.right) 
 
+#================================================================================================
+
 if __name__ == "__main__":
     tree = RangeTree("./data/out.json")
 
-    result = tree.query_driver([100, 200], None, [5,10])
+    result = tree.query_driver(None, "Brooks", None)
+    #result = tree.query_driver(None, None, None)
 
-    for node in result:
-        for dp in node.data:
-            print(dp)
+    print(len(result))
+ 
+    if result is not None:
+        for dp in result:
+            print(dp.name)
+
+    
