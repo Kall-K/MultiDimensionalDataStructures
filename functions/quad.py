@@ -154,7 +154,7 @@ def letter_to_int(str1):
 
 def str_to_int(word):
     word = word.lower()
-    for c in [",", ".", "-", "ö","ø"]:
+    for c in [",", ".", "-", "ö","ø","'"]:
         word = word.replace(c, "")
     word = word.split()[-1]
     
@@ -197,7 +197,7 @@ if __name__ == "__main__":
 
     for i in data: 
         name_val = str_to_int(i["name"])
-        nodes.append(Node2(tuple([i["awards"],i["dblp_records"],name_val]), i["name"])) # [None]*8, i["name"])) 
+        nodes.append(Node2(tuple([i["awards"],i["dblp_records"],name_val]), i["name"]))  
 
         if i["awards"]>max_x:
             max_x = i["awards"]
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     #octree.traverse(octree.root)
 
     #range query
-    ranges = [[0,0],[1,3],[str_to_int("a"),str_to_int("z")]]
+    ranges = [[0,3],[0,1],[str_to_int("a"),str_to_int("c")]]
     selected_nodes = []
     selected_nodes = octree.range_query( octree.root, ranges, selected_nodes)
     
