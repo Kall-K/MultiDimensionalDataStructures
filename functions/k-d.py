@@ -211,12 +211,11 @@ class KDTree:
         if kdNode.value(depth) >= upper: check_L = True
         else: check_R = True
 
-        check0 = check1 = check2 = False
-        check0 = self.inRange(kdNode.data[0], up_bound, low_bound, split_order[0])
-        check1 = self.inRange(kdNode.data[0], up_bound, low_bound, split_order[1])
-        check2 = self.inRange(kdNode.data[0], up_bound, low_bound, split_order[2])
+        check = [False]*3
+        for i in range(3):
+            check[i]= self.inRange(kdNode.data[0], up_bound, low_bound, split_order[i])
         
-        if check0 and check1 and check2 : result.append(kdNode.data[0])
+        if all(check): result.append(kdNode.data[0])
         
         if check_L and kdNode.left != None:
             self.rangeQuery(kdNode.left, depth+1, up_bound, low_bound, result)
@@ -237,7 +236,7 @@ if __name__ == "__main__":
     #tree.printKDTree(tree.root)
     
     lower = {"name": "A", "dblp": 0, "awards": 0}#input
-    upper = {"name": "C", "dblp": 1, "awards": 3}#input
+    upper = {"name": "F", "dblp": 50, "awards": 50}#input
     result = []
     result = tree.rangeQuery(tree.root, 0, upper, lower, result)        
     print(len(result))  
