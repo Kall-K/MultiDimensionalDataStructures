@@ -1,6 +1,5 @@
 import os, json, random
 
-
 k = 3   # for shingling
 C = 100   # number of hash functions for minhashing
 B = 50   # number of buckets for hash functions for lsh
@@ -20,8 +19,6 @@ for c, i in enumerate(jdata):
         go_back.append(c)
 
 
-#data = ['abcdefgeggerdhaha', 'abcdefgkaggerdhaha']
-
 def find_b(C, t):
     bs = []
     for b in range(1,C):
@@ -32,6 +29,28 @@ def find_b(C, t):
         if abs((1/b)**(b/C)-t)>abs((1/i)**(i/C)-t):
             b = i
     return b
+
+
+def plot_t(t, b, C):
+    import matplotlib.pyplot as plt
+
+    x1, y1 = ([t, t], [0, 1])
+    t_aprox = (1/b)**(b/C)
+    x2, y2 = ([t_aprox, t_aprox], [0, 1])
+
+    x3, y3 = ([],[])
+    for j in range(0,11,1):
+        i = j/10
+        x3.append(i)
+        y3.append(1-(1-i**(C/b))**b)
+
+    plt.plot(x1, y1, label='threshold')
+    plt.plot(x2, y2, label='threshold aproximation')
+    plt.plot(x3, y3, marker = 'o')
+    plt.legend()
+    plt.xlabel('Jacard similarity of 2 sets')
+    plt.ylabel('Probability of sharing a bucket')
+    plt.show()
 
 
 def shingling(string, k):
@@ -74,6 +93,7 @@ def make_table(all_shingles, shingled_data):
 def h(seed, num, t_len):
     return ((seed+1)*(num+10) + seed + t_len/2)%t_len
 
+
 def h2(seed, buckets):
     random.seed(seed*100 + 10)
     return round(random.random()*100*(buckets + 100))%buckets
@@ -110,11 +130,13 @@ def compare_sig(sig1, sig2):
             counter += 1
     return counter/len(sig1)
 
-def int_sig(sig):
+
+def sig2int(sig):
     fstr = ''
     for i in sig:
         fstr+=str(int(i))
     return int(fstr)
+
 
 def lsh(data, k, C, b, B, threshold):
     r = int(C/b)
@@ -133,7 +155,7 @@ def lsh(data, k, C, b, B, threshold):
         for i in range(B):
             buckets.append([])
         for j,sign in enumerate(band):
-            buckets[h2(int_sig(sign), B)].append(j)
+            buckets[h2(sig2int(sign), B)].append(j)
 
         for bucket in buckets:
             if len(bucket) < 2:
@@ -159,4 +181,4 @@ for group in l:
     print('')
 
 
-
+plot_t(threshold,b,C)
