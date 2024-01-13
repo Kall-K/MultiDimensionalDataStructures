@@ -34,7 +34,7 @@ for i in range(len(jdata)):
 
 
 with open(path + "\\data\\out2.json", "w", encoding="utf-8") as f:
-    json.dump(final_data, f, indent=2)
+    json.dump(final_data, f, indent=4)
 
 
 print("Bad characters: " + str(counter))
