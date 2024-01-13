@@ -1,60 +1,45 @@
-import os, json, math
-import str_int
-
-K = 100
-
-path = os.path.abspath(os.getcwd())
-end1 = "\\..\\data\\out2.json"
-end2 = "\\data\\out2.json"
-with open(path + end2, "r", encoding="utf-8") as f:
-    jdata = json.load(f)
+import math
 
 class node:
-    def __init__(self, minx, miny, minz, maxx, maxy, maxz, obj=None):
+    def __init__(self, minx, miny, minz, maxx, maxy, maxz, id=None):
         self.minx = minx
         self.miny = miny
         self.minz = minz
         self.maxx = maxx
         self.maxy = maxy
         self.maxz = maxz
-        self.obj = obj
-        if obj == None:
+        self.id = id
+        if id == None:
             self.children = []
     def getmin(self):
         return (self.minx,self.miny,self.minz)
     def getmax(self):
         return (self.maxx,self.maxy,self.maxz)
 
-data = []
-for i in jdata:
-    n1 = i['name'].split()[-1]
-    n2 = n1.ljust(4, 'a')[:4]
-    n = str_int.str_to_int(n2)
-    a = i['awards']
-    d = i['dblp_records']
-    data.append(node(n, a, d, n, a, d, i))
 
+def get_nodelist(jdata):
+    nodelist = []
+    for num,i in enumerate(jdata):
+        n1 = i['name'].split()[-1]
+        n2 = n1.ljust(4, 'a')[:4]
+        n = str_int.str_to_int(n2)
+        a = i['awards']
+        d = i['dblp_records']
+        nodelist.append(node(n, a, d, n, a, d, id=num))
 
-tmaxx, tmaxy, tmaxz = (0,0,0)
-for i in data:
-    if i.maxx > tmaxx:
-        tmaxx = i.maxx
-    if i.maxy > tmaxy:
-        tmaxy = i.maxy
-    if i.maxz > tmaxz:
-        tmaxz = i.maxz
-for i in data:
-    i.minx, i.miny, i.minz = (i.minx/tmaxx, i.miny/tmaxy, i.minz/tmaxz)
-    i.maxx, i.maxy, i.maxz = (i.maxx/tmaxx, i.maxy/tmaxy, i.maxz/tmaxz)
+    tmaxx, tmaxy, tmaxz = (0,0,0)
+    for i in nodelist:
+        if i.maxx > tmaxx:
+            tmaxx = i.maxx
+        if i.maxy > tmaxy:
+            tmaxy = i.maxy
+        if i.maxz > tmaxz:
+            tmaxz = i.maxz
+    for i in nodelist:
+        i.minx, i.miny, i.minz = (i.minx/tmaxx, i.miny/tmaxy, i.minz/tmaxz)
+        i.maxx, i.maxy, i.maxz = (i.maxx/tmaxx, i.maxy/tmaxy, i.maxz/tmaxz)
 
-tminx, tminy, tminz = (0,0,0)
-for i in data:
-    if i.minx < tminx:
-        tminx = i.minx
-    if i.miny < tminy:
-        tminy = i.miny
-    if i.minz < tminz:
-        tminz = i.minz
+    return (nodelist, tmaxx, tmaxy, tmaxz)
 
 
 def dist(xyz1, xyz2):
@@ -90,7 +75,7 @@ def makembr(nodelist):
         mbr.children.append(i)
     return mbr
 
-def build(list1):
+def build(list1, K):
     list2 = list1
     list3 = []
     start = (0,0,0)
@@ -115,7 +100,7 @@ def build(list1):
             near = list2.pop(near_idx)
             llist.append(near)
             start = near.getmin()
-    return build(list3)
+    return build(list3, K)
 
 
 def inters(n1, range):
@@ -135,14 +120,14 @@ def inters(n1, range):
         return 1
     return 0
 
-def get_results(root,minx=tminx/tmaxx,miny=tminy/tmaxy,minz=tminz/tmaxz,maxx=1,maxy=1,maxz=1):
+def get_results(root,minx=0,miny=0,minz=0,maxx=1,maxy=1,maxz=1):
     results = []
     def search(root,minx,miny,minz,maxx,maxy,maxz):
         for i in root:
-            if i.obj != None:
+            if i.id != None:
                 if ((i.minx>=minx) and (i.miny>=miny) and (i.minz>=minz) and
                     (i.minx<=maxx) and (i.miny<=maxy) and (i.minz<=maxz)):
-                    results.append(i.obj)
+                    results.append(i.id)
             else:
                 if inters(i, node(minx,miny,minz,maxx,maxy,maxz,0)):
                     search(i.children, minx,miny,minz,maxx,maxy,maxz)
@@ -151,11 +136,11 @@ def get_results(root,minx=tminx/tmaxx,miny=tminy/tmaxy,minz=tminz/tmaxz,maxx=1,m
     return results
 
 
-def printdata(data, root, show_points=0, show_rects=2):   # 2->only final rects
+def printdata(data, root, show_points=0, show_rects=2):
     """
     show_rects: if 0 it will NOT show rects,
                 if 1 it will show ALL rects,
-                if 2 it will show initial rects
+                if 2 it will show final rects
     """
     import matplotlib.pyplot as plt
 
@@ -184,13 +169,13 @@ def printdata(data, root, show_points=0, show_rects=2):   # 2->only final rects
     def get_rects(root):
         if show_rects==1:
             for i in root:
-                if i.obj == None:
+                if i.id == None:
                     rect_list.append([i.getmin(), i.getmax()])
                     get_rects(i.children)
         else:
             for i in root:
-                if i.obj == None:
-                    if i.children[0].obj != None:
+                if i.id == None:
+                    if i.children[0].id != None:
                         rect_list.append([i.getmin(), i.getmax()])
                     get_rects(i.children)
     
@@ -206,10 +191,9 @@ def printdata(data, root, show_points=0, show_rects=2):   # 2->only final rects
     plt.show()
 
 
-def main(data, mode='print'):
-    root = build(data.copy())
-
-    #mode = input("To search type 'search'.\nTo print type print.\n")
+def main_tree(jdata, K=100, mode='search'):
+    (nodelist, tmaxx, tmaxy, tmaxz) = get_nodelist(jdata)
+    root = build(nodelist.copy(), K)
 
     if mode=='search':
         n1 = input("Give the start of the range for names: ")
@@ -223,12 +207,46 @@ def main(data, mode='print'):
 
         res = get_results(root, minx=n1/tmaxx, miny=a/tmaxy, minz=d1/tmaxz, maxx=n2/tmaxx, maxz=d2/tmaxz)
         print("Number of results: " + str(len(res)))
-
+        
         if input("show? ")=="y":
             for i in res:
-                print(i["name"], i["awards"], i["dblp_records"])
+                print(i)
+        
+        return res
 
     elif mode=='print':
-        printdata(data, root)
+        printdata(nodelist, root)
 
-main(data)
+#main_tree(jdata)
+
+class rtree:
+    def __init__(self, jdata, K=5):
+        (self.nodelist, self.tmaxx, self.tmaxy, self.tmaxz) = get_nodelist(jdata)
+        self.K = K
+    def build_tree(self):
+        self.root = build(self.nodelist.copy(), self.K)
+
+    def search(self, n1, n2, a, d1, d2):
+        n1_ = str_int.str_to_int(n1.ljust(4, 'a')[:4])
+        n2_ = str_int.str_to_int(n2.ljust(4, 'a')[:4])
+        return get_results(self.root, minx=n1_/self.tmaxx, miny=a/self.tmaxy,
+                    minz=d1/self.tmaxz, maxx=n2_/self.tmaxx, maxz=d2/self.tmaxz)
+    def print_tree(self):
+        printdata(self.nodelist, self.root)
+
+if __name__ == "__main__":
+    import os, json
+    import str_int
+
+    path = os.path.abspath(os.getcwd())
+    end1 = "\\..\\data\\out2.json"
+    end2 = "\\data\\out2.json"
+    with open(path + end2, "r", encoding="utf-8") as f:
+        jdata = json.load(f)
+    
+    rr = rtree(jdata)
+    rr.build_tree()
+    rr.print_tree()
+
+else:
+    from functions import str_int

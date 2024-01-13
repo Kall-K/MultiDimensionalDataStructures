@@ -1,22 +1,4 @@
-import os, json, random
-
-k = 3   # for shingling
-C = 100   # number of hash functions for minhashing
-B = 50   # number of buckets for hash functions for lsh
-threshold = 0.35   # similarity threshold
-
-path = os.path.abspath(os.getcwd())
-end1 = "\\..\\data\\out2.json"
-end2 = "\\data\\out2.json"
-with open(path + end2, "r", encoding="utf-8") as f:
-    jdata = json.load(f)
-
-data = []
-go_back = []
-for c, i in enumerate(jdata):
-    if 'education' in i.keys():
-        data.append(i['education'])
-        go_back.append(c)
+import random
 
 
 def find_b(C, t):
@@ -115,12 +97,11 @@ def minhash(table, C):
     return M
 
 # from data to signatures
-def get_signatures(data, k, C):
+def get_shingle_table(data, k):
     shingled_data = shingle(data,k)
     all_shingles = get_shingles(shingled_data)
     t = make_table(all_shingles, shingled_data)
-    sig = minhash(t,C)
-    return sig
+    return t
 
 
 def compare_sig(sig1, sig2):
@@ -138,9 +119,8 @@ def sig2int(sig):
     return int(fstr)
 
 
-def lsh(data, k, C, b, B, threshold):
+def lsh(sig, C, b, B, threshold):
     r = int(C/b)
-    sig = get_signatures(data,k,C)
 
     bands = []
     for i in range(b):
@@ -171,14 +151,60 @@ def lsh(data, k, C, b, B, threshold):
 
     return groups
 
+def get_unique_groups(groups):
+    g = groups.copy()
+    unique_groups = []
+    for group in groups:
+        unique = 1
+        for u in unique_groups:
+            if sorted(group)==sorted(u):
+                unique = 0
+        if unique:
+            unique_groups.append(group)
+    return unique_groups
+
+def shing_minhash_lsh(data, k, C, B, threshold, plot_threshold=1):
+    # k: for shingling
+    # C: number of hash functions for minhashing
+    # B: number of buckets for hash functions for lsh
+    # threshold: similarity threshold
+
+    t = get_shingle_table(data, k)   # Get table with samples(columns) and shingles(rows)
+    sig_with_minhash = minhash(t,C)   # Get table with samples(columns) and signatures(rows)
+
+    b = find_b(C,threshold)   # Find b to satisfy threshold
+
+    if plot_threshold:
+        plot_t(threshold,b,C)
+    
+    groups = lsh(sig_with_minhash, C, b, B, threshold)   # Find similar groups
+
+    groups_unique = get_unique_groups(groups)
+
+    return groups_unique
 
 
-b = find_b(C,threshold)
-l = lsh(data,k,C,b,B,threshold)
-for group in l:
-    for s in group:
-        print(jdata[go_back[s]]['name'])
-    print('')
+if __name__ == "__main__":
+    import os, json
+    path = os.path.abspath(os.getcwd())
+    end1 = "\\..\\data\\out2.json"
+    end2 = "\\data\\out2.json"
+    with open(path + end2, "r", encoding="utf-8") as f:
+        jdata = json.load(f)
 
+    data = []
+    for i in jdata:
+        if 'education' in i.keys():
+            data.append(i['education'])
 
-plot_t(threshold,b,C)
+    groups = shing_minhash_lsh(data, k=3, C=100, B=50, threshold=0.4, plot_threshold=0)
+    for group in groups:
+        if len(group)>10:
+            continue
+        for s in group:
+            print(jdata[s]['name'])
+        print('')
+    #print(groups)
+
+else:
+    pass
