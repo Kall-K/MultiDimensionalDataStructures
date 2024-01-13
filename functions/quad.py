@@ -2,6 +2,10 @@ import json
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import string
+import re
+
+fig = plt.figure()     
+ax = fig.add_subplot(111, projection='3d')
 
 #this type of Node is the coordinates which separates the space in 4 equal cubes
 class Node1:
@@ -12,9 +16,10 @@ class Node1:
 
 #this type of Node is the coordinates which represents the data
 class Node2:
-    def __init__(self, coordinates, name):
+    def __init__(self, coordinates, name, id):
         self.coordinates = coordinates
         self.name = name
+        self.id = id
 
 class Octree:
     #initialize octree with the first node i.e. root
@@ -96,7 +101,7 @@ class Octree:
                 if hasattr(n[i], "children"): 
                     self.traverse(n[i])
                 elif n[i] != None: 
-                    print(n[i].coordinates, n[i].name)
+                    print(f"coordinates:{n[i].coordinates}, name:{n[i].name}, id:{n[i].id}.")
     
     #range query
     def range_query(self, node, ranges, selected_nodes):
@@ -154,15 +159,14 @@ def letter_to_int(str1):
 
 def str_to_int(word):
     word = word.lower()
-    for c in [",", ".", "-", "ö","ø","'"]:
-        word = word.replace(c, "")
     word = word.split()[-1]
-    
-    if len(word) < 6:
-        for i in range(6-len(word)):
+    word = re.sub(r'[^a-z]+', '', word)
+    l=4
+    if len(word) < l:
+        for i in range(l-len(word)):
             word += "a"
-    if len(word) > 5:
-        word = word[0:6]
+    if len(word) >= l:
+        word = word[0:l]
     word = word[::-1]
 
     num = 0
@@ -180,38 +184,29 @@ def plot_3d_lines(ax, x, y, z, half_x, half_y, half_z):
     ax.plot([x, x], [y-2*half_y, y+2*half_y], [z, z], color='green', alpha=0.5)
     ax.plot([x, x], [y, y], [z-2*half_z, z+2*half_z], color='blue', alpha=0.5)
 
-
-
-if __name__ == "__main__":
-    file_path = './data/out.json'
-
-    with open(file_path, 'r', encoding='UTF8') as file:
-        data = json.load(file)
-    fig = plt.figure()     
-    ax = fig.add_subplot(111, projection='3d')
-
+def init_quadTree(data):
+    #x->awards y->dblp_records z->name
     nodes = []
     max_x = max_y = max_z = 0
     min_z = 1e+13
     #consider that min of x and y is 0
 
-    for i in data: 
-        name_val = str_to_int(i["name"])
-        nodes.append(Node2(tuple([i["awards"],i["dblp_records"],name_val]), i["name"]))  
+    for index, value in enumerate(data): 
+        name_val = str_to_int(value["name"])
+        nodes.append(Node2(tuple([value["awards"],value["dblp_records"],name_val]), value["name"], index))  
 
-        if i["awards"]>max_x:
-            max_x = i["awards"]
-        if i["dblp_records"]>max_y:
-            max_y = i["dblp_records"]
+        if value["awards"]>max_x:
+            max_x = value["awards"]
+        if value["dblp_records"]>max_y:
+            max_y = value["dblp_records"]
         if name_val>=max_z:
             max_z = name_val
         if name_val<=min_z:
             min_z = name_val
             
-        ax.scatter(i["awards"],i["dblp_records"], name_val)
-    #
-    print(max_z, min_z)
-    #
+        ax.scatter(value["awards"],value["dblp_records"], name_val)
+   
+
     octree = Octree((max_x/2, max_y/2, min_z+(max_z-min_z)/2), [[None]*9 for _ in range(8)], (max_x/4,max_y/4,(max_z-min_z)/4))
     plot_3d_lines(ax, max_x/2, max_y/2, min_z+(max_z-min_z)/2, max_x/4,max_y/4,(max_z-min_z)/4)
      
@@ -219,26 +214,40 @@ if __name__ == "__main__":
     counter_data = 0
     for n in nodes:        
         octree.insert_node(octree.root, n)
-        #print(counter_data)
+        
         counter_data +=1
     #
     print(counter_data)
     #
+
+    #print tree
     #octree.traverse(octree.root)
 
     #range query
-    ranges = [[0,3],[0,1],[str_to_int("a"),str_to_int("c")]]
+    ranges = [[0,3],[0,1],[str_to_int("a"),str_to_int("b")]]
     selected_nodes = []
-    selected_nodes = octree.range_query( octree.root, ranges, selected_nodes)
+    selected_nodes = octree.range_query(octree.root, ranges, selected_nodes)
     
     for sn in selected_nodes:
-        print(sn.coordinates, sn.name)
+        print(f"coordinates:{sn.coordinates}, name:{sn.name}, id:{sn.id}.")
+        
     print(len(selected_nodes))
-    #
+    
+
     #plot
     ax.set_xlabel('awards')
     ax.set_ylabel('dblp-record')
     ax.set_zlabel('name')
     plt.show()
+
+
+if __name__ == "__main__":
+    file_path = './data/out2.json'
+
+    with open(file_path, 'r', encoding='UTF8') as file:
+        data = json.load(file)
+
+    init_quadTree(data)
+
 
 
