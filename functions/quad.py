@@ -217,28 +217,10 @@ def init_quadTree(data):
         
         counter_data +=1
     #
-    print(counter_data)
+    #print(counter_data)
     #
 
-    #print tree
-    #octree.traverse(octree.root)
-
-    #range query
-    ranges = [[0,3],[0,1],[str_to_int("a"),str_to_int("b")]]
-    selected_nodes = []
-    selected_nodes = octree.range_query(octree.root, ranges, selected_nodes)
-    
-    for sn in selected_nodes:
-        print(f"coordinates:{sn.coordinates}, name:{sn.name}, id:{sn.id}.")
-        
-    print(len(selected_nodes))
-    
-
-    #plot
-    ax.set_xlabel('awards')
-    ax.set_ylabel('dblp-record')
-    ax.set_zlabel('name')
-    plt.show()
+    return octree, max_x
 
 
 if __name__ == "__main__":
@@ -247,7 +229,26 @@ if __name__ == "__main__":
     with open(file_path, 'r', encoding='UTF8') as file:
         data = json.load(file)
 
-    init_quadTree(data)
+    octree, max_x = init_quadTree(data)
+
+    #print tree
+    #octree.traverse(octree.root)
+
+    #range query
+    ranges = [[0,max_x],[0,1],[str_to_int("a"),str_to_int("b")]]
+    selected_nodes = []
+    selected_nodes = octree.range_query(octree.root, ranges, selected_nodes)
+    
+    for sn in selected_nodes:
+        print(f"coordinates:{sn.coordinates}, name:{sn.name}, id:{sn.id}.")
+
+    print(len(selected_nodes))
+
+    #plot
+    ax.set_xlabel('awards')
+    ax.set_ylabel('dblp-record')
+    ax.set_zlabel('name')
+    plt.show()
 
 
 
