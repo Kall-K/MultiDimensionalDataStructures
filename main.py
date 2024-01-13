@@ -9,7 +9,7 @@ from timeit import default_timer as timer
 path = os.path.abspath(os.getcwd())
 with open(path + "\\data\\out2.json", "r", encoding="utf-8") as f:
     jdata = json.load(f)
-    
+
 #build quadTree
 tic = timer()
 octree, max_x = quad.init_quadTree(jdata)
@@ -22,7 +22,7 @@ quad_nodes = []
 tic = timer()
 quad_nodes = octree.range_query(octree.root, ranges, quad_nodes)
 tic = timer()
-print(f"(QuaTree-RangeQuery)ellapsed time: {toc-tic} sec")
+print(f"(QuaTree-RangeQuery)ellapsed time: {tic-toc} sec")
 #end
 
 for qn in quad_nodes:
