@@ -10,8 +10,8 @@ index = {3: "dblp", 2: "name", 1: "awards"}
 
 class DataPoint:
 
-    def __init__(self, name: str, awards: int, dblp: int, education: str):
-        self.data = {"name": name, "awards": awards, "dblp": dblp, "education": education}
+    def __init__(self, name: str, awards: int, dblp: int, education: str, id: int):
+        self.data = {"name": name, "awards": awards, "dblp": dblp, "education": education, "id": id}
 
     def __getattr__(self, name: str) -> Any:
         val = self.data.get(name, None)
@@ -55,24 +55,22 @@ class RangeTree:
     dataset: Path to the json file containing the dataset
     '''
 
-    def __init__(self, dataset: str | list[RangeTreeNode], dimension: int = 3):    
+    def __init__(self, dataset: list[dict] | list[RangeTreeNode], dimension: int = 3):    
         self.dataset = dataset
         self.root = None
         self.dimension = dimension
 
         if self.dimension == 3: #Create tree from JSON file
             #Get the dataset as a JSON object
-            data = None
-            with open(self.dataset, "r", encoding = "utf-8") as f:
-                data = json.load(f)
 
-            for scientist in data:
+            for i, scientist in enumerate(dataset):
                 self.insert(
                 DataPoint(
                     scientist["name"],
                     scientist["awards"],
                     scientist["dblp_records"],
-                    scientist.get("education", "EMPTY")
+                    scientist.get("education", "EMPTY"),
+                    i
                 ))
         else: #Create tree using existing data in the dataset list
             for data_point in dataset:
@@ -114,6 +112,9 @@ class RangeTree:
         '''
         if start_node == None:
             start_node = self.root
+
+        if type(search_value) is str:
+            search_value = search_value.lower()
 
         path = []
         current_node = start_node
@@ -223,6 +224,12 @@ class RangeTree:
         
         if x2 is None:
             x2 = self.find_biggest().value
+
+        if type(x1) is str:
+            x1 = x1.lower()
+
+        if type(x2) is str:
+            x2 = x2.lower()
 
         result = []
 
@@ -424,7 +431,7 @@ class RangeTree:
 
         #For names, use lastname for indexing
         if type(value) is str:
-            value = value.split()[-1]
+            value = value.split()[-1].lower()
 
         if self.root == None:
             self.root = RangeTreeNode(value, [x])
@@ -530,15 +537,20 @@ class RangeTree:
 #================================================================================================
 
 if __name__ == "__main__":
-    tree = RangeTree("./data/out.json")
 
-    result = tree.query_driver(None, "Brooks", None)
+    data = None
+    with open("./data/out.json", "r", encoding = "utf-8") as f:
+        data = json.load(f)
+
+    tree = RangeTree(data)
+
+    result = tree.query_driver([0,1], ["A", "C"], [0,3])
     #result = tree.query_driver(None, None, None)
 
     print(len(result))
  
     if result is not None:
         for dp in result:
-            print(dp.name)
+            print(dp.id)
 
     

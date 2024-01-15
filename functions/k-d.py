@@ -182,6 +182,8 @@ class KDTree:
             json.dump(right_indexes, f, default = lambda dp: dp.data, indent=4)
         '''
 
+        #print(split_order[depth % 3], len(left_indexes["name"]), len(right_indexes["name"]))
+
         left_child = self.construct(depth + 1, left_indexes)
         right_child = self.construct(depth + 1, right_indexes)
         return KDNode(this_list, left_child, right_child)
