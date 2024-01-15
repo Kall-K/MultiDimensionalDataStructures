@@ -497,7 +497,7 @@ class RangeTree:
                 #print(self.dimension, "DONT CARE")
                 return self.root.alt_tree.query_driver(q1, q2, q3)
             else:
-                return [dp for leaf in self.report_leaves() for dp in leaf.data]
+                return [dp.id for leaf in self.report_leaves() for dp in leaf.data]
 
         for node in local_res:
             if self.dimension > 1:
@@ -505,7 +505,7 @@ class RangeTree:
                 if next_dim_res is not None:
                     res = res + next_dim_res
             else:
-                res = res + [dp for leaf in self.report_leaves(node) for dp in leaf.data]
+                res = res + [dp.id for leaf in self.report_leaves(node) for dp in leaf.data]
 
         return res
         
