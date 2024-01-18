@@ -52,14 +52,14 @@ class DataPoint:
         val = self.data[split_order[depth % 3]]
 
         if type(val) is str:
-            return val.split()[-1].lower() #Lastname
+            return val.split()[-1] #Lastname
         else:
             return val
     
 #================================================================================================
     
 class KDNode:
-    def __init__(self, data, left: "KDNode" = None, right: "KDNode" = None):
+    def __init__(self, data: list[DataPoint], left: "KDNode" = None, right: "KDNode" = None):
         self.left = left
         self.right = right
 
@@ -80,12 +80,7 @@ class KDTree:
     def __init__(self, dataset):
         self.dataset = []
 
-        # data = None
-
-        # Initialize the dataset from the json file
-        # with open(dataset, "r", encoding = "utf-8") as f:
-        #     data = json.load(f)
-        id = 0
+        id = 1
         for scientist in dataset:
             self.dataset.append(DataPoint(
                     scientist["name"],
@@ -107,7 +102,7 @@ class KDTree:
         self.root = self.construct(0, {"name": name_index, "dblp": dblp_index, "awards": awards_index})
 
     #================================================================================================
-    def construct(self, depth: int, indexes) -> KDNode:
+    def construct(self, depth: int, indexes: dict[str, list[DataPoint]]) -> KDNode:
         '''
             Constructs the KD Tree using the 3 sorted indices.
             Discriminator is determined by the current depth
@@ -192,12 +187,11 @@ class KDTree:
         return KDNode(this_list, left_child, right_child)
     
     def printKDTree(self, kdNode):
-        print(kdNode.data[0])
+        for i in range(len(kdNode.data)):
+            print(kdNode.data[i].id)
         if kdNode.left != None:
-            print("L")
             self.printKDTree(kdNode.left)
         if kdNode.right != None:
-            print("R")
             self.printKDTree(kdNode.right)
     
     def rangeQuery(self, kdNode, depth, up_bound, low_bound, result):
@@ -207,11 +201,6 @@ class KDTree:
 
         check_R = check_L = False
         
-        if (type(upper) is str):
-            upper = upper.lower()
-        if (type(lower) is str):
-            lower = lower.lower()
-
         if kdNode.value(depth) >= lower: check_L = True
         else: check_R = True
         
@@ -222,7 +211,9 @@ class KDTree:
         for i in range(3):
             check[i]= self.inRange(kdNode.data[0], up_bound, low_bound, split_order[i])
         
-        if all(check): result.append(kdNode.data[0].id)
+        if all(check): 
+            for i in range(len(kdNode.data)):
+                result.append(kdNode.data[i].id)
         
         if check_L and kdNode.left != None:
             self.rangeQuery(kdNode.left, depth+1, up_bound, low_bound, result)
@@ -235,18 +226,24 @@ class KDTree:
         return (node.__getitem__(key)<=up_bound[key]) and (node.__getitem__(key)>=low_bound[key])
         
 #================================================================================================
+def init_kdTree(data):
+    return KDTree(data)
 
 #================================================================================================
 
 if __name__ == "__main__":
-    tree = KDTree("./data/out2.json")
-    #tree.printKDTree(tree.root)
+    #Initialize the dataset from the json file
+    with open("./data/out2.json", "r", encoding = "utf-8") as f:
+        data = json.load(f)
+        
+    tree = KDTree(data)
+    # tree.printKDTree(tree.root)
     
     lower = {"name": "A", "dblp": 0, "awards": 0}#input
-    upper = {"name": "F", "dblp": 50, "awards": 50}#input
+    upper = {"name": "Zz", "dblp": 10000, "awards": 1000}#input
     result = []
     result = tree.rangeQuery(tree.root, 0, upper, lower, result)        
      
-    # for r in result:
-    #     print(r.__str__())                                         
+    for r in result:
+        print(r.__str__())                                         
     print(len(result)) 
