@@ -77,15 +77,10 @@ class KDNode:
 #================================================================================================
     
 class KDTree:
-    def __init__(self, dataset: str):
+    def __init__(self, dataset):
         self.dataset = []
 
-        # data = None
-
-        # Initialize the dataset from the json file
-        # with open(dataset, "r", encoding = "utf-8") as f:
-        #     data = json.load(f)
-        id = 0
+        id = 1
         for scientist in dataset:
             self.dataset.append(DataPoint(
                     scientist["name"],
@@ -192,12 +187,11 @@ class KDTree:
         return KDNode(this_list, left_child, right_child)
     
     def printKDTree(self, kdNode):
-        print(kdNode.data[0])
+        for i in range(len(kdNode.data)):
+            print(kdNode.data[i].id)
         if kdNode.left != None:
-            print("L")
             self.printKDTree(kdNode.left)
         if kdNode.right != None:
-            print("R")
             self.printKDTree(kdNode.right)
     
     def rangeQuery(self, kdNode, depth, up_bound, low_bound, result):
@@ -217,7 +211,9 @@ class KDTree:
         for i in range(3):
             check[i]= self.inRange(kdNode.data[0], up_bound, low_bound, split_order[i])
         
-        if all(check): result.append(kdNode.data[0].id)
+        if all(check): 
+            for i in range(len(kdNode.data)):
+                result.append(kdNode.data[i].id)
         
         if check_L and kdNode.left != None:
             self.rangeQuery(kdNode.left, depth+1, up_bound, low_bound, result)
@@ -233,18 +229,21 @@ class KDTree:
 def init_kdTree(data):
     return KDTree(data)
 
-
 #================================================================================================
 
 if __name__ == "__main__":
-    tree = KDTree("./data/out2.json")
-    #tree.printKDTree(tree.root)
+    #Initialize the dataset from the json file
+    with open("./data/out2.json", "r", encoding = "utf-8") as f:
+        data = json.load(f)
+        
+    tree = KDTree(data)
+    # tree.printKDTree(tree.root)
     
     lower = {"name": "A", "dblp": 0, "awards": 0}#input
-    upper = {"name": "F", "dblp": 50, "awards": 50}#input
+    upper = {"name": "Zz", "dblp": 10000, "awards": 1000}#input
     result = []
     result = tree.rangeQuery(tree.root, 0, upper, lower, result)        
      
-    # for r in result:
-    #     print(r.__str__())                                         
+    for r in result:
+        print(r.__str__())                                         
     print(len(result)) 

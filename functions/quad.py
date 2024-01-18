@@ -114,7 +114,7 @@ class Octree:
                 else:
                     for i in range(len(node.children[p])):
                         if self.node_in_range(node.children[p][i], ranges):
-                            selected_nodes.append(node.children[p][i])
+                            selected_nodes.append(node.children[p][i].id)
                            
         return selected_nodes
 
@@ -235,12 +235,13 @@ if __name__ == "__main__":
     #octree.traverse(octree.root)
 
     #range query
-    ranges = [[0,max_x],[0,1],[str_to_int("a"),str_to_int("b")]]
+    ranges = [[0,max_x],[0,10000],[str_to_int("a"),str_to_int("z")]]
     selected_nodes = []
     selected_nodes = octree.range_query(octree.root, ranges, selected_nodes)
     
     for sn in selected_nodes:
-        print(f"coordinates:{sn.coordinates}, name:{sn.name}, id:{sn.id}.")
+        print(sn)
+        #print(f"coordinates:{sn.coordinates}, name:{sn.name}, id:{sn.id}.")
 
     print(len(selected_nodes))
 
@@ -248,7 +249,7 @@ if __name__ == "__main__":
     ax.set_xlabel('awards')
     ax.set_ylabel('dblp-record')
     ax.set_zlabel('name')
-    plt.show()
+    #plt.show()
 
 
 

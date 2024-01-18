@@ -10,31 +10,32 @@ path = os.path.abspath(os.getcwd())
 with open(path + "\\data\\out2.json", "r", encoding="utf-8") as f:
     jdata = json.load(f)
 
-# #build quadTree
-# tic = timer()
-# octree, max_x = quad.init_quadTree(jdata)
-# toc = timer()
-# #end 
-# print(f"(QuadTree-Build)ellapsed time: {toc-tic} sec")
-# #range query quadTree
-# ranges = [[0,max_x],[0,1],[quad.str_to_int("a"),quad.str_to_int("b")]]
-# quad_nodes = []
-# tic = timer()
-# quad_nodes = octree.range_query(octree.root, ranges, quad_nodes)
-# tic = timer()
-# print(f"(QuadTree-RangeQuery)ellapsed time: {tic-toc} sec")
-# #end
-
+#build quadTree
+tic = timer()
+octree, max_x = quad.init_quadTree(jdata)
+toc = timer()
+#end 
+print(f"(QuadTree-Build)ellapsed time: {toc-tic} sec")
+#range query quadTree
+ranges = [[0,max_x],[0,10000],[quad.str_to_int("e"),quad.str_to_int("x")]]
+quad_nodes = []
+tic = timer()
+quad_nodes = octree.range_query(octree.root, ranges, quad_nodes)
+tic = timer()
+print(f"(QuadTree-RangeQuery)ellapsed time: {tic-toc} sec")
+#end
+print(len(quad_nodes))
 # for qn in quad_nodes:
 #     print(f"coordinates:{qn.coordinates}, name:{qn.name}, id:{qn.id}.")
     
 k_dtree = k_d.init_kdTree(jdata)
-lower = {"name": "A", "dblp": 0, "awards": 0}#input
-upper = {"name": "F", "dblp": 50, "awards": 50}#input
+lower = {"name": "E", "dblp": 0, "awards": 0}#input
+upper = {"name": "X", "dblp": 10000, "awards": max_x}#input
 result = k_dtree.rangeQuery(k_dtree.root, 0, upper, lower, [])
 print(len(result)) 
-for r in result:
-        print(r) 
+
+# for r in result:
+#         print(r) 
 # data = []
 # go_back = []
 # for c, i in enumerate(jdata):
