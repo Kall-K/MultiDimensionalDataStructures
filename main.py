@@ -28,9 +28,9 @@ print(len(quad_nodes))
 # for qn in quad_nodes:
 #     print(f"coordinates:{qn.coordinates}, name:{qn.name}, id:{qn.id}.")
     
-k_dtree = k_d.init_kdTree(jdata)
-lower = {"name": "E", "dblp": 0, "awards": 0}#input
-upper = {"name": "X", "dblp": 10000, "awards": max_x}#input
+k_dtree = k_d.KDTree(jdata)
+lower = {"name": "e", "dblp": 0, "awards": 0}#input
+upper = {"name": "x", "dblp": 10000, "awards": max_x}#input
 result = k_dtree.rangeQuery(k_dtree.root, 0, upper, lower, [])
 print(len(result)) 
 
