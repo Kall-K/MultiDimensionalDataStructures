@@ -230,9 +230,6 @@ class KDTree:
     def inRange(self, node, up_bound, low_bound, key):
         return (node.__getitem__(key)<=up_bound[key]) and (node.__getitem__(key)>=low_bound[key])
         
-#================================================================================================
-def init_kdTree(data):
-    return KDTree(data)
 
 #================================================================================================
 
