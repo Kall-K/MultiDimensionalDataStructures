@@ -53,8 +53,8 @@ print(t1-t0)
 
 
 k_dtree = k_d.KDTree(jdata)
-lower = {"name": n1, "dblp": d1, "awards": a1}
-upper = {"name": n2, "dblp": d2, "awards": max_x}
+lower = {"name": n1.lower(), "dblp": d1, "awards": a1}
+upper = {"name": n2.lower(), "dblp": d2, "awards": max_x}
 result = k_dtree.rangeQuery(k_dtree.root, 0, upper, lower, [])
 print(len(result))
 
