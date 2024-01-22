@@ -19,22 +19,22 @@ t0 = perf_counter()
 rr = rtree.rtree(jdata)
 rr.build_tree()
 t1 = perf_counter()
-print(t1-t0)
+print(f"R-Tree construction time: {t1-t0}")
 
 t0 = perf_counter()
 ids = rr.search(n1,n2,a1,d1,d2)
 t1 = perf_counter()
-print(t1-t0)
+print(f"R-Tree query time: {t1-t0}\n")
 
 
 t0 = perf_counter()
 tree_range = range.RangeTree(jdata)
 t1 = perf_counter()
-print(t1-t0)
+print(f"Range Tree construction time: {t1-t0}")
 t0 = perf_counter()
 ids_range = tree_range.query_driver([n1,n2],[a1,None],[d1,d2])
 t1 = perf_counter()
-print(t1-t0)
+print(f"Range Tree query time: {t1-t0}\n")
 
 
 #toc = timer()
@@ -42,12 +42,12 @@ print(t1-t0)
 t0 = perf_counter()
 octree, max_x = quad.init_quadTree(jdata)
 t1 = perf_counter()
-print(t1-t0)
+print(f"Quad Tree construction time: {t1-t0}")
 
 t0 = perf_counter()
 ids_quad = octree.range_query(octree.root, [[a1,max_x],[d1,d2],[quad.str_to_int(n1),quad.str_to_int(n2)]], [])
 t1 = perf_counter()
-print(t1-t0)
+print(f"Quad Tree query time: {t1-t0}\n")
 
 
 

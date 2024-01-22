@@ -446,14 +446,14 @@ class RangeTree:
                 leaf.value = value
                 leaf.data = None
 
-                #self.balance(leaf)
+                self.balance(leaf)
             else:
                 leaf.left = RangeTreeNode(leaf.value, leaf.data, leaf)
                 leaf.right = RangeTreeNode(value, [x], leaf)
 
                 leaf.data = None
 
-                #self.balance(leaf)
+                self.balance(leaf)
 
     #================================================================================================
 
@@ -487,11 +487,11 @@ class RangeTree:
         if type(q) is int or type(q) is str: #Exact match search
             local_res = [self.search(q)]
             if local_res[0].value != q:
-                return None
+                return []
         elif type(q) is list: #Range search
             local_res = self.range_search(q[0], q[1])
             if len(local_res) == 0:
-                return None
+                return []
         elif q is None: #Don't care for this dimension
             if self.dimension > 1:
                 #print(self.dimension, "DONT CARE")
@@ -502,8 +502,8 @@ class RangeTree:
         for node in local_res:
             if self.dimension > 1:
                 next_dim_res = node.alt_tree.query_driver(q1, q2, q3)
-                if next_dim_res is not None:
-                    res = res + next_dim_res
+                #if next_dim_res is not None:
+                res = res + next_dim_res
             else:
                 res = res + [dp.id for leaf in self.report_leaves(node) for dp in leaf.data]
 
@@ -543,7 +543,7 @@ if __name__ == "__main__":
 
     tree = RangeTree(data)
 
-    result = tree.query_driver(["A", "C"], [0,3], [0,1])
+    result = tree.query_driver(["C", "A"], [0,3], [0,1])
     #result = tree.query_driver(None, None, None)
 
     print(len(result))
