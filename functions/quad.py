@@ -134,18 +134,21 @@ class Octree:
         if val_xL and val_xR: set_x = {0,1,2,3,4,5,6,7}
         elif val_xL: set_x = {0,3,4,7}
         elif val_xR: set_x = {1,2,4,6}
+        else : set_x = {}
 
         val_yF = node.coordinates[1]>=ranges[1][0] # y: area Front pos = 0,1,4,5
         val_yB = node.coordinates[1]<ranges[1][1] # y: area Back pos = 2,3,6,7
         if val_yF and val_yB: set_y = {0,1,2,3,4,5,6,7}
         elif val_yF: set_y = {0,1,4,5}
         elif val_yB: set_y = {2,3,6,7}
+        else : set_y = {}
 
         val_zD = node.coordinates[2]>=ranges[2][0] # z: area Down pos = 0,1,2,3
         val_zU = node.coordinates[2]<ranges[2][1] # z: area Up pos = 4,5,6,7
         if val_zD and val_zU: set_z = {0,1,2,3,4,5,6,7}
         elif val_zD: set_z = {0,1,2,3}
         elif val_zU: set_z = {4,5,6,7}
+        else : set_z = {}
 
         return list(set_x.intersection(set_y, set_z))
 #end of class octree
