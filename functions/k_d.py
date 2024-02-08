@@ -200,11 +200,6 @@ class KDTree:
         lower = low_bound[split_order[depth % 3]]
 
         check_R = check_L = False
-
-        if (type(upper) is str):
-            upper = upper.lower()
-        if (type(lower) is str):
-            lower = lower.lower()
         
         if kdNode.value(depth) >= lower: check_L = True
         else: check_R = True
@@ -230,9 +225,6 @@ class KDTree:
     def inRange(self, node, up_bound, low_bound, key):
         return (node.__getitem__(key)<=up_bound[key]) and (node.__getitem__(key)>=low_bound[key])
         
-#================================================================================================
-def init_kdTree(data):
-    return KDTree(data)
 
 #================================================================================================
 
@@ -244,8 +236,8 @@ if __name__ == "__main__":
     tree = KDTree(data)
     # tree.printKDTree(tree.root)
     
-    lower = {"name": "e", "dblp": 0, "awards": 0}#input
-    upper = {"name": "x", "dblp": 10000, "awards": 1000}#input
+    lower = {"name": "a", "dblp": 100, "awards": 4}#input
+    upper = {"name": "y", "dblp": 200, "awards": 1000}#input
     result = []
     result = tree.rangeQuery(tree.root, 0, upper, lower, result)        
      
