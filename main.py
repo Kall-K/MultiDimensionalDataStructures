@@ -43,7 +43,7 @@ t1 = perf_counter()
 print(f"Quad Tree construction time: {t1-t0}")
 
 t0 = perf_counter()
-ids_quad = octree.range_query(octree.root, [[a1,max_x],[d1,d2],[quad.str_to_int(n1),quad.str_to_int(n2)]], [])
+ids_quad = octree.range_query(octree.root, [[a1,max_x],[d1,d2],[quad.str_to_int(n1, "a"),quad.str_to_int(n2, "z")]], [])
 t1 = perf_counter()
 print(f"Quad Tree query time: {t1-t0}\n")
 print(len(ids_quad))
