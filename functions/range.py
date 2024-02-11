@@ -31,6 +31,10 @@ class DataPoint:
 class RangeTreeNode:
 
     def __init__(self, value, data, parent = None, left = None, right = None):
+        '''
+            value: int|str
+            data: list[DataPoint]
+        '''
         self.left = left
         self.right = right
 
@@ -463,10 +467,13 @@ class RangeTree:
 
             Accepted types:
             - int/ str for exact match
+                - Using a one-charcter string as input will search using the first letter only
             - list for range query
                 - [int/str, int/str] for two-sided range query
                 - Putting None in any side will make the query one-sided
                 - [None, None] is equivalent to just None
+
+                -Using one-character strings as input will search using the first letters only
             - None means "ignore this dimension"
 
             Returns:
@@ -485,13 +492,27 @@ class RangeTree:
         res = []
 
         if type(q) is int or type(q) is str: #Exact match search
-            local_res = [self.search(q)]
-            if local_res[0].value != q:
-                return []
+
+            #For one-character strings, it meabs we want to search using first letter only
+            #This is equivalent to a range search, between the letter and the same letter with extra z's on the back
+            if type(q) is str and len(q) == 1:
+                local_res = self.range_search(q, q+"zzzzzz") 
+                if len(local_res) == 0:
+                    return []
+            else: #Normal. exact-match search
+                local_res = [self.search(q)]
+                if local_res[0].value != q:
+                    return []
+                
         elif type(q) is list: #Range search
+
+            if type(q[1]) is str and len(q[0]) == 1 and len(q[1]) == 1: #Range search using first letter only
+                q[1] += "zzzzzz"
+
             local_res = self.range_search(q[0], q[1])
             if len(local_res) == 0:
                 return []
+            
         elif q is None: #Don't care for this dimension
             if self.dimension > 1:
                 #print(self.dimension, "DONT CARE")
@@ -543,11 +564,23 @@ if __name__ == "__main__":
 
     tree = RangeTree(data)
 
-    result = tree.query_driver(["C", "A"], [0,3], [0,1])
+    result = tree.query_driver("B", [0, None], [0, 10])
     #result = tree.query_driver(None, None, None)
 
-    print(len(result))
- 
-    if result is not None:
-        for dp in result:
-            print(dp.id)
+    print("Name, Awards, DBLP\n")
+
+    print('tree.query_driver("A", [0, None], [0, 10]):')
+    res = len(tree.query_driver("A", [0, None], [0, 10]))
+    print(f"{res}")
+
+    print()
+
+    print('tree.query_driver("B", [0, None], [0, 10]):')
+    res = len(tree.query_driver("B", [0, None], [0, 10]))
+    print(f"{res}")
+
+    print()
+
+    print('tree.query_driver(["A", "B"], [0, None], [0, 10]):')
+    res = len(tree.query_driver(["A", None], [0, None], [0, 10]))
+    print(f"{res}")
