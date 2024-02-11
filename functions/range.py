@@ -222,6 +222,7 @@ class RangeTree:
 
         
         #Preprocessing
+        #===================================================================
         if x1 is None:
             x1 = self.find_smallest().value
         
@@ -233,6 +234,8 @@ class RangeTree:
 
         if type(x2) is str:
             x2 = x2.lower()
+
+        #===================================================================
 
         result = []
 
@@ -258,14 +261,6 @@ class RangeTree:
             result.append(s1)
 
         result = result + p1 + p2
-
-        '''
-        for x in p1:
-            result = result + self.report_leaves(x)
-
-        for x in p2:
-            result = result + self.report_leaves(x)
-        '''
 
         if s1 != s2 and s2.value <= x2 and s2.value >= x1:
             result.append(s2)
@@ -493,7 +488,7 @@ class RangeTree:
 
         if type(q) is int or type(q) is str: #Exact match search
 
-            #For one-character strings, it meabs we want to search using first letter only
+            #For one-character strings, it means we want to search using first letter only
             #This is equivalent to a range search, between the letter and the same letter with extra z's on the back
             if type(q) is str and len(q) == 1:
                 local_res = self.range_search(q, q+"zzzzzz") 
