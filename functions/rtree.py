@@ -1,6 +1,8 @@
 import math
 
-class node:
+# Represents a point or a cuboid in 3d space
+class Node:
+    # Give coordinates
     def __init__(self, minx, miny, minz, maxx, maxy, maxz, id=None):
         self.minx = minx
         self.miny = miny
@@ -11,22 +13,25 @@ class node:
         self.id = id
         if id == None:
             self.children = []
+    # Get min coordinates (min distance measured from (0,0,0))
     def getmin(self):
         return (self.minx,self.miny,self.minz)
+    # Get max coordinates (max distance measured from (0,0,0))
     def getmax(self):
         return (self.maxx,self.maxy,self.maxz)
 
-
+# Gets json data and returns a list with points as nodes
 def get_nodelist(jdata):
+    # From json records to nodes
     nodelist = []
     for num,i in enumerate(jdata):
-        n1 = i['name'].split()[-1]
-        n2 = n1.ljust(4, 'a')[:4]
-        n = str_int.str_to_int(n2)
+        n1 = i['name'].split()[-1]   # Get surname from full name
+        n2 = n1.ljust(4, 'a')[:4]   # Padding so it gets correct sorting place
+        n = str_int.str_to_int(n2)   # Get a number value for the surname
         a = i['awards']
         d = i['dblp_records']
-        nodelist.append(node(n, a, d, n, a, d, id=num))
-
+        nodelist.append(Node(n, a, d, n, a, d, id=num))
+    # Get max values of each dimension
     tmaxx, tmaxy, tmaxz = (0,0,0)
     for i in nodelist:
         if i.maxx > tmaxx:
@@ -35,18 +40,21 @@ def get_nodelist(jdata):
             tmaxy = i.maxy
         if i.maxz > tmaxz:
             tmaxz = i.maxz
+    # Normalize nodes' coordinates
     for i in nodelist:
         i.minx, i.miny, i.minz = (i.minx/tmaxx, i.miny/tmaxy, i.minz/tmaxz)
         i.maxx, i.maxy, i.maxz = (i.maxx/tmaxx, i.maxy/tmaxy, i.maxz/tmaxz)
 
     return (nodelist, tmaxx, tmaxy, tmaxz)
 
-
+# Get the Euclidean distance of 2 points in 3d space
 def dist(xyz1, xyz2):
     return math.sqrt(math.pow(xyz1[0]-xyz2[0], 2) + 
                      math.pow(xyz1[1]-xyz2[1], 2) + 
                      math.pow(xyz1[2]-xyz2[2], 2))
 
+# Get index of a point in nodelist that is nearest to the point with coordinates xyz
+# xyz is like (x,y,z)
 def nearest(xyz, nodelist):
     indx = 0
     for i in range(len(nodelist)):
@@ -55,9 +63,12 @@ def nearest(xyz, nodelist):
             indx = i
     return indx
 
+# Make a cuboid from nodes in nodelist
+# Set the coordinates so that the cuboid encompases all the nodes
+# Add to the cuboid's children the nodes of the nodelist
 def makembr(nodelist):
     bignum = 100000000000
-    mbr = node(bignum,bignum,bignum,0,0,0)
+    mbr = Node(bignum,bignum,bignum,0,0,0)
     for i in nodelist:
         if i.minx < mbr.minx:
             mbr.minx = i.minx
@@ -75,50 +86,53 @@ def makembr(nodelist):
         mbr.children.append(i)
     return mbr
 
-def build(list1, K):
-    list2 = list1
-    list3 = []
+# Give list with nodes-points. Get a list with the root node
+def build(nodelist, K):
+    nodes_for_mbr = nodelist   # List with nodes to put in MBRs
+    list_with_mbrs = []   # List with final list with MBRs
     start = (0,0,0)
 
-    if len(list1) == 1:
-        return list1
+    if len(nodelist) == 1:
+        return nodelist
 
-    llist = []
-    while len(list2)>0:
-        if (len(llist) == K-1) or (len(list2) == 1):
-            near_idx = nearest(start,list2)
-            near = list2.pop(near_idx)
-            llist.append(near)
-            start = near.getmin()
+    local_list = []   # Temporary storage for each MBR
+    while len(nodes_for_mbr) > 0:
+        # if we need to create an MBR
+        if (len(local_list) == K-1) or (len(nodes_for_mbr) == 1):
+            near_idx = nearest(start,nodes_for_mbr)
+            near = nodes_for_mbr.pop(near_idx)
+            local_list.append(near)
 
-            new_node = makembr(llist)
-            list3.append(new_node)
-            llist = []
+            new_node = makembr(local_list)
+            list_with_mbrs.append(new_node)
+            local_list = []
             start = (0,0,0)
+        # if we want to append a node to nodelist for the next MBR
         else:
-            near_idx = nearest(start,list2)
-            near = list2.pop(near_idx)
-            llist.append(near)
+            near_idx = nearest(start,nodes_for_mbr)
+            near = nodes_for_mbr.pop(near_idx)
+            local_list.append(near)
             start = near.getmin()
-    return build(list3, K)
+    return build(list_with_mbrs, K)
 
 
-def inters(n1, range):
+def mbr_intersects_mbr(big_mbr, small_mbr):
     if ((
-        (range.minx<=n1.minx and range.maxx>=n1.minx) or
-        (range.maxx>=n1.maxx and range.minx<=n1.maxx) or
-        (range.minx>=n1.minx and range.maxx<=n1.maxx)
+        (big_mbr.minx<=small_mbr.minx and big_mbr.maxx>=small_mbr.minx) or
+        (big_mbr.maxx>=small_mbr.maxx and big_mbr.minx<=small_mbr.maxx) or
+        (big_mbr.minx>=small_mbr.minx and big_mbr.maxx<=small_mbr.maxx)
         ) and (
-        (range.miny<=n1.miny and range.maxy>=n1.miny) or
-        (range.maxy>=n1.maxy and range.miny<=n1.maxy) or
-        (range.miny>=n1.miny and range.maxy<=n1.maxy)
+        (big_mbr.miny<=small_mbr.miny and big_mbr.maxy>=small_mbr.miny) or
+        (big_mbr.maxy>=small_mbr.maxy and big_mbr.miny<=small_mbr.maxy) or
+        (big_mbr.miny>=small_mbr.miny and big_mbr.maxy<=small_mbr.maxy)
         ) and (
-        (range.minz<=n1.minz and range.maxz>=n1.minz) or
-        (range.maxz>=n1.maxz and range.minz<=n1.maxz) or
-        (range.minz>=n1.minz and range.maxz<=n1.maxz)
+        (big_mbr.minz<=small_mbr.minz and big_mbr.maxz>=small_mbr.minz) or
+        (big_mbr.maxz>=small_mbr.maxz and big_mbr.minz<=small_mbr.maxz) or
+        (big_mbr.minz>=small_mbr.minz and big_mbr.maxz<=small_mbr.maxz)
         )):
         return 1
     return 0
+
 
 def get_results(root,minx=0,miny=0,minz=0,maxx=1,maxy=1,maxz=1):
     results = []
@@ -129,7 +143,7 @@ def get_results(root,minx=0,miny=0,minz=0,maxx=1,maxy=1,maxz=1):
                     (i.minx<=maxx) and (i.miny<=maxy) and (i.minz<=maxz)):
                     results.append(i.id)
             else:
-                if inters(i, node(minx,miny,minz,maxx,maxy,maxz,0)):
+                if mbr_intersects_mbr(Node(minx,miny,minz,maxx,maxy,maxz,0), i):
                     search(i.children, minx,miny,minz,maxx,maxy,maxz)
 
     search(root,minx,miny,minz,maxx,maxy,maxz)
@@ -191,48 +205,21 @@ def printdata(data, root, show_points=0, show_rects=2):
     plt.show()
 
 
-def main_tree(jdata, K=100, mode='search'):
-    (nodelist, tmaxx, tmaxy, tmaxz) = get_nodelist(jdata)
-    root = build(nodelist.copy(), K)
-
-    if mode=='search':
-        n1 = input("Give the start of the range for names: ")
-        n1 = str_int.str_to_int(n1.ljust(4, 'a')[:4])
-        n2 = input("Give the end of the range for names: ")
-        n2 = str_int.str_to_int(n2.ljust(4, 'a')[:4])
-
-        a = int(input("Give the award threshold number: "))
-        d1 = int(input("Give the start of the range for dblp: "))
-        d2 = int(input("Give the end of the range for dblp: "))
-
-        res = get_results(root, minx=n1/tmaxx, miny=a/tmaxy, minz=d1/tmaxz, maxx=n2/tmaxx, maxz=d2/tmaxz)
-        print("Number of results: " + str(len(res)))
-        
-        if input("show? ")=="y":
-            for i in res:
-                print(i)
-        
-        return res
-
-    elif mode=='print':
-        printdata(nodelist, root)
-
-#main_tree(jdata)
-
-class rtree:
+class Rtree:
     def __init__(self, jdata, K=5):
         (self.nodelist, self.tmaxx, self.tmaxy, self.tmaxz) = get_nodelist(jdata)
         self.K = K
     def build_tree(self):
         self.root = build(self.nodelist.copy(), self.K)
 
-    def search(self, n1, n2, a, d1, d2):
+    def search(self, n1, n2, a, d1, d2):   # use: search("a","c",0,0,2)
         n1_ = str_int.str_to_int(n1.ljust(4, 'a')[:4])
-        n2_ = str_int.str_to_int(n2.ljust(4, 'a')[:4])
+        n2_ = str_int.str_to_int(n2.ljust(4, 'z')[:4])
         return get_results(self.root, minx=n1_/self.tmaxx, miny=a/self.tmaxy,
                     minz=d1/self.tmaxz, maxx=n2_/self.tmaxx, maxz=d2/self.tmaxz)
     def print_tree(self):
         printdata(self.nodelist, self.root)
+
 
 if __name__ == "__main__":
     import os, json
@@ -244,16 +231,17 @@ if __name__ == "__main__":
     with open(path + end2, "r", encoding="utf-8") as f:
         jdata = json.load(f)
     
-    rr = rtree(jdata)
+    rr = Rtree(jdata)
     rr.build_tree()
     #rr.print_tree()
-    n1 = "A"
+    n1 = "Aaa"
     n2 = "zzzzzzzzzz"
     a1 = 0
     d1 = 0
     d2 = 10000
     ids = rr.search(n1,n2,a1,d1,d2)
     print(len(ids))
+
 
 else:
     from functions import str_int

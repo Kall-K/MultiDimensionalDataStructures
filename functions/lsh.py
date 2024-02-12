@@ -1,6 +1,6 @@
 import random
 
-
+# Find best b so that the threshold is close to t
 def find_b(C, t):
     bs = []
     for b in range(1,C):
@@ -8,7 +8,7 @@ def find_b(C, t):
             bs.append(b)
     b = -1
     for i in bs:
-        if abs((1/b)**(b/C)-t)>abs((1/i)**(i/C)-t):
+        if abs((1/b)**(b/C)-t) > abs((1/i)**(i/C)-t):
             b = i
     return b
 
@@ -43,7 +43,7 @@ def shingling(string, k):
     return flist
 
 
-def shingle(data, k):
+def shingle_data(data, k):
     shingled_data = []
     for i in data:
         shingled_data.append(shingling(i, k))
@@ -71,6 +71,13 @@ def make_table(all_shingles, shingled_data):
         table.append(column)
     return table
 
+# from data to signatures
+def get_shingle_table(data, k):
+    shingled_data = shingle_data(data,k)
+    all_shingles = get_shingles(shingled_data)
+    t = make_table(all_shingles, shingled_data)
+    return t
+
 
 def h(seed, num, t_len):
     return ((seed+1)*(num+10) + seed + t_len/2)%t_len
@@ -95,13 +102,6 @@ def minhash(table, C):
                     if h(i,r,len(table[0])) < M[c][i]:
                         M[c][i] = h(i,r,len(table[0]))
     return M
-
-# from data to signatures
-def get_shingle_table(data, k):
-    shingled_data = shingle(data,k)
-    all_shingles = get_shingles(shingled_data)
-    t = make_table(all_shingles, shingled_data)
-    return t
 
 
 def compare_sig(sig1, sig2):
@@ -151,8 +151,8 @@ def lsh(sig, C, b, B, threshold):
 
     return groups
 
+
 def get_unique_groups(groups):
-    g = groups.copy()
     unique_groups = []
     for group in groups:
         unique = 1
@@ -162,6 +162,7 @@ def get_unique_groups(groups):
         if unique:
             unique_groups.append(group)
     return unique_groups
+
 
 def shing_minhash_lsh(data, k, C, B, threshold, plot_threshold=1):
     # k: for shingling
