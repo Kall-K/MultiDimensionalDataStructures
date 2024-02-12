@@ -1,11 +1,12 @@
 import json
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import string
 import re
 
 fig = plt.figure()     
 ax = fig.add_subplot(111, projection='3d')
+
+capacity = 4 #set max num of points into a cube
 
 #this type of Node is the coordinates which separates the space in 4 equal cubes
 class Node1:
@@ -20,7 +21,7 @@ class Node2:
         self.coordinates = coordinates
         self.name = name
         self.id = id
-
+    
 class Octree:
     #initialize octree with the first node i.e. root
     def __init__(self, root_coordinates, root_children, root_half_val):
@@ -72,7 +73,7 @@ class Octree:
 
         plot_3d_lines(ax, x_, y_, z_, half_x, half_y, half_z)
         
-        return Node1((x_, y_, z_), [[None]*9 for _ in range(8)], (half_x, half_y, half_z))
+        return Node1((x_, y_, z_), [[None]*capacity for _ in range(8)], (half_x, half_y, half_z))
 
     def compare_nodes(self, parent_node, child_node):
         compare_x = parent_node.coordinates[0] >= child_node.coordinates[0]
@@ -92,7 +93,7 @@ class Octree:
     #here i made a truth table and i found the expression to calculate the right position of the node
     def find_position(self, co_x, co_y, co_z):
         return 4*int((not co_z))+2*int((not co_y))+int((co_x ^ co_y))
-    
+        
     #traverse tree
     def traverse(self, node):
         print(node.coordinates,"->parent")
@@ -108,12 +109,13 @@ class Octree:
         pp = []
         pp = self.possible_pos(node, ranges)
         for p in pp:
-            if node.children[p] !=None:
+            if node.children[p][0] != None:
                 if len(node.children[p]) == 1 :
                     self.range_query(node.children[p][0], ranges, selected_nodes)
                 else:
                     for i in range(len(node.children[p])):
                         if self.node_in_range(node.children[p][i], ranges):
+                            #selected_nodes.append(node.children[p][i]) #use this instead the following in case u want to use the line 250 
                             selected_nodes.append(node.children[p][i].id)
         return selected_nodes
 
@@ -133,7 +135,7 @@ class Octree:
         val_xR = node.coordinates[0]<ranges[0][1] # x: area Right pos = 1,2,4,6
         if val_xL and val_xR: set_x = {0,1,2,3,4,5,6,7}
         elif val_xL: set_x = {0,3,4,7}
-        elif val_xR: set_x = {1,2,4,6}
+        elif val_xR: set_x = {1,2,5,6}
         else : set_x = {}
 
         val_yF = node.coordinates[1]>=ranges[1][0] # y: area Front pos = 0,1,4,5
@@ -150,6 +152,7 @@ class Octree:
         elif val_zU: set_z = {4,5,6,7}
         else : set_z = {}
 
+
         return list(set_x.intersection(set_y, set_z))
 #end of class octree
 
@@ -158,16 +161,16 @@ def letter_to_int(str1):
     let = string.ascii_lowercase
     for i in range(len(let)):
         if let[i] == str1:
-            return i    #or i+1
+            return i  
 
-def str_to_int(word):
+def str_to_int(word, letter):
     word = word.lower()
     word = word.split()[-1]
     word = re.sub(r'[^a-z]+', '', word)
     l=4
     if len(word) < l:
         for i in range(l-len(word)):
-            word += "a"
+            word += letter
     if len(word) >= l:
         word = word[0:l]
     word = word[::-1]
@@ -195,7 +198,7 @@ def init_quadTree(data):
     #consider that min of x and y is 0
 
     for index, value in enumerate(data): 
-        name_val = str_to_int(value["name"])
+        name_val = str_to_int(value["name"], "a")
         nodes.append(Node2(tuple([value["awards"],value["dblp_records"],name_val]), value["name"], index))  
 
         if value["awards"]>max_x:
@@ -210,15 +213,14 @@ def init_quadTree(data):
         ax.scatter(value["awards"],value["dblp_records"], name_val)
    
 
-    octree = Octree((max_x/2, max_y/2, min_z+(max_z-min_z)/2), [[None]*9 for _ in range(8)], (max_x/4,max_y/4,(max_z-min_z)/4))
+    octree = Octree((max_x/2, max_y/2, min_z+(max_z-min_z)/2), [[None]*capacity for _ in range(8)], (max_x/4,max_y/4,(max_z-min_z)/4))
     plot_3d_lines(ax, max_x/2, max_y/2, min_z+(max_z-min_z)/2, max_x/4,max_y/4,(max_z-min_z)/4)
      
     #insert points in quadtree
-    counter_data = 0
+    #counter_data = 0 # Use this variable to verify that all data have been inserted.
     for n in nodes:        
         octree.insert_node(octree.root, n)
-        
-        counter_data +=1
+    #   counter_data +=1
     #
     #print(counter_data)
     #
@@ -238,14 +240,15 @@ if __name__ == "__main__":
     #octree.traverse(octree.root)
 
     #range query
-    ranges = [[0,max_x],[0,1],[str_to_int("a"),str_to_int("b")]]
+    ranges = [[4,max_x],[100,200],[str_to_int("l", "a"),str_to_int("y", "z")]]
     selected_nodes = []
     selected_nodes = octree.range_query(octree.root, ranges, selected_nodes)
     
-    for sn in selected_nodes:
-        print(f"coordinates:{sn.coordinates}, name:{sn.name}, id:{sn.id}.")
+    #uncomment the following if u want to print the selected nodes in format "coordinates: , name: , id: ."
+    # for sn in selected_nodes:
+    #     print(f"coordinates:{sn.coordinates}, name:{sn.name}, id:{sn.id}.")
 
-    print(len(selected_nodes))
+    # print(len(selected_nodes))
 
     #plot
     ax.set_xlabel('awards')

@@ -195,6 +195,10 @@ class KDTree:
             self.printKDTree(kdNode.right)
     
     def rangeQuery(self, kdNode, depth, up_bound, low_bound, result):
+        if depth ==  0:
+            up_bound["name"] += "z"
+            print(up_bound)
+        
         global split_order
         upper = up_bound[split_order[depth % 3]]
         lower = low_bound[split_order[depth % 3]]
@@ -236,11 +240,9 @@ if __name__ == "__main__":
     tree = KDTree(data)
     # tree.printKDTree(tree.root)
     
-    lower = {"name": "E", "dblp": 0, "awards": 0}#input
-    upper = {"name": "X", "dblp": 10000, "awards": 1000}#input
+    lower = {"name": "a", "dblp": 100, "awards": 4}#input
+    upper = {"name": "y", "dblp": 200, "awards": 1000}#input
     result = []
     result = tree.rangeQuery(tree.root, 0, upper, lower, result)        
-     
-    for r in result:
-        print(r.__str__())                                         
+                                             
     print(len(result)) 
