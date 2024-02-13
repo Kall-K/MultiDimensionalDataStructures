@@ -145,6 +145,31 @@ def lsh_run(ids):
             f.write("\n")
 
 #=========================================================================================
+            
+def make_plot(filename, data, xlabel, ylabel, title, show_on_screen = False):
+
+    #Make the plot directory
+    if not os.path.exists("plots"):
+        os.makedirs("plots")
+
+    trees = list(data.keys())
+    times = list(data.values())
+
+    fig = plt.figure(figsize = (10, 5))
+
+    # creating the bar plot
+    plt.bar(trees, times, color ='#5dade2', width = 0.4)
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+    if show_on_screen:
+        plt.show()
+
+    fig.savefig(f"plots/{filename}")
+
+#=========================================================================================
 
 if __name__ == "__main__":
 
@@ -156,65 +181,61 @@ if __name__ == "__main__":
         jdata = json.load(f)
 
     #Number of queries executed
-    print("If you set num of range queries equal to 1 you give the inputs manually \notherwise the parameters are configured automatically.\n")
+    print("\nIf you set num of range queries equal to 1 you give the inputs manually \notherwise the parameters are configured automatically.\n")
     num_experiments = int(input("Select the number of range queries to be executed: "))
+
     #Build trees
+    print("\nBuilding trees...\n")
     trees, build_times = build_trees(jdata)
 
-    if (num_experiments > 1):
-        #Execute random queries
+    print("Construction times\n==========================================")
+    print(f"> R-Tree: {build_times['r_tree']}\n")
+    print(f"> Range Tree: {build_times['range_tree']}\n")
+    print(f"> Quad Tree: {build_times['quad_tree']}\n")
+    print(f"> KD Tree: {build_times['kd_tree']}\n")
+
+    print()
+
+    #Plot construction time
+    data = {"R-Tree": build_times["r_tree"], "Range Tree": build_times["range_tree"], "Quad Tree": build_times["quad_tree"], "KD Tree": build_times["kd_tree"]}
+    make_plot("build.png", data, "Tree", "Time", "Construction times for all trees")
+
+    if (num_experiments > 1): #Execute random queries
+
         result = run_experiments(trees, num_experiments)
-        
-        #Bar plot of average construction times
-        data = {"R-Tree": build_times["r_tree"], "Range Tree": build_times["range_tree"], "Quad Tree": build_times["quad_tree"], "KD Tree": build_times["kd_tree"]}
-        trees = list(data.keys())
-        times = list(data.values())
-
-        fig = plt.figure(figsize = (10, 5))
-
-        # creating the bar plot
-        plt.bar(trees, times, color ='maroon', width = 0.4)
-
-        plt.xlabel("Tree")
-        plt.ylabel("Time")
-        plt.title("Average construction times for all trees")
-    
 
         #Average query times for each tree
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
         r_time = sum(result["r_tree"])/num_experiments
         range_time = sum(result["range_tree"])/num_experiments
         quad_time = sum(result["quad_tree"])/num_experiments
         kd_time = sum(result["kd_tree"])/num_experiments
 
-        print(f"Average R-Tree time: {r_time}")
-        print(f"Average Range Tree time: {range_time}")
-        print(f"Average Quad-Tree time: {quad_time}")
-        print(f"Average KD-Tree time: {kd_time}")
+        print(f"Average query times for {num_experiments} queries\n==========================================")
+        print(f"> R-Tree: {r_time}\n")
+        print(f"> Range Tree: {range_time}\n")
+        print(f"> Quad Tree: {quad_time}\n")
+        print(f"> KD Tree: {kd_time}\n")
 
-        for i, t in enumerate(result["r_tree"]):
-            print(f"Time of R-Tree for query {i}: {t}")
+        print()
 
         #Bar plot of average times for queries
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
         data = {"R-Tree": r_time, "Range Tree": range_time, "Quad Tree": quad_time, "KD Tree": kd_time}
-        trees = list(data.keys())
-        times = list(data.values())
-
-        fig = plt.figure(figsize = (10, 5))
-
-        # creating the bar plot for queries
-        plt.bar(trees, times, color ='maroon', width = 0.4)
-
-        plt.xlabel("Tree")
-        plt.ylabel("Time")
-        plt.title("Average query times for all trees")
-        plt.show()
+        make_plot("average_time.png", data, "Tree", "Time", f"Average query times for {num_experiments} queries")
 
         #Export times to excel
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
         excel_data = {"R-Tree": result["r_tree"], "Range Tree": result["range_tree"], "Quad Tree": result["quad_tree"], "KD Tree": result["kd_tree"]}
         df = pd.DataFrame(excel_data, index=list(range(num_experiments)))
         df.to_excel("query_times.xlsx", index_label="Query")
 
         #Export queries to excel
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
         excel_queries = {"n1": [], "n2": [], "a1": [], "d1": [], "d2": []}
 
         for query in result["parameters"]:
@@ -223,13 +244,26 @@ if __name__ == "__main__":
 
         df_queries = pd.DataFrame(excel_queries, index=list(range(num_experiments)))
         df_queries.to_excel("queries.xlsx", index_label = "Query")
-    elif (num_experiments == 1):
+
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    elif (num_experiments == 1): #Manual query
         times, ids = unique_range_query(trees)
 
-        print(f"Average R-Tree time: {times['r_tree']}")
-        print(f"Average Range Tree time: {times['range_tree']}")
-        print(f"Average Quad-Tree time: {times['quad_tree']}")
-        print(f"Average KD-Tree time: {times['kd_tree']}")
+        print()
+
+        print("Query times\n==========================================")
+        print(f"> R-Tree: {times['r_tree']}\n")
+        print(f"> Range Tree: {times['range_tree']}\n")
+        print(f"> Quad Tree: {times['quad_tree']}\n")
+        print(f"> KD Tree: {times['kd_tree']}\n")
+
+        print()
+
+        #Plot query times
+        data = {"R-Tree": times["r_tree"], "Range Tree": times["range_tree"], "Quad Tree": times["quad_tree"], "KD Tree": times["kd_tree"]}
+        make_plot("single_query_time.png", data, "Tree", "Time", "Query time for all trees")
 
         lsh_run(ids)
-    else: print("Invalid Input, Pls try again!")
+
+    else: print("Invalid Input, Please try again!")
