@@ -149,8 +149,11 @@ def lsh_run(ids, _threshold, save_results):
 
         with open("lsh.txt", "w") as f:
             for sids in similar_ids:
-                if len(sids)>20:
+                # if len(sids)>20:
+                #     continue
+                if jdata[sids[0]]['education'] == "No education found.":
                     continue
+
                 for sid in sids:
                     f.write(str(sid)+": "+jdata[sid]["name"]+"\n")
                 f.write("\n")
@@ -253,8 +256,6 @@ if __name__ == "__main__":
 
         excel_data = {"R-Tree": result["r_tree"], "Range Tree": result["range_tree"], "Quad Tree": result["quad_tree"], "KD Tree": result["kd_tree"], "# results": num_results, "LSH": result["lsh"]}
         df = pd.DataFrame(excel_data, index=list(range(num_experiments)))
-
-        #df.to_excel("query_times.xlsx", index_label="Query")
 
         #Export queries to excel
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
