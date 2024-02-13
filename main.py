@@ -47,6 +47,7 @@ def build_trees(jdata):
 #=========================================================================================
 
 def query_all(trees, n1, n2, a1, d1, d2):
+    LSH_TEST_THRESHOLD = 0.3
     
     runtimes = {}
 
@@ -81,6 +82,12 @@ def query_all(trees, n1, n2, a1, d1, d2):
     t1 = perf_counter()
     runtimes["kd_tree"] = t1-t0
 
+    # LSH
+    if ids_rtree:
+        runtimes["lsh"] = lsh_run(ids_rtree, LSH_TEST_THRESHOLD, False)
+    else:
+        runtimes["lsh"] = 0
+
     assert ids_rtree.sort() == ids_range.sort(), "Range tree ids not equal to R-tree ids"
     assert ids_rtree.sort() == ids_quad.sort(), "Range tree ids not equal to R-tree ids"
     assert ids_rtree.sort() == ids_kd.sort(), "Range tree ids not equal to R-tree ids"
@@ -91,7 +98,7 @@ def query_all(trees, n1, n2, a1, d1, d2):
 
 def run_experiments(trees, num_of_experiments=10):
     #rtree, range, quad, kd
-    runtimes = {"parameters": [], "ids": [], "r_tree": [], "range_tree": [], "quad_tree": [], "kd_tree": []}
+    runtimes = {"parameters": [], "ids": [], "r_tree": [], "range_tree": [], "quad_tree": [], "kd_tree": [], "lsh": []}
     for _ in range(num_of_experiments):
         n1 = random.choice(string.ascii_lowercase)
         n2 = random.choice(n1 + string.ascii_lowercase.split(n1)[1])
@@ -106,6 +113,7 @@ def run_experiments(trees, num_of_experiments=10):
         runtimes["range_tree"].append(query_times["range_tree"])
         runtimes["quad_tree"].append(query_times["quad_tree"])
         runtimes["kd_tree"].append(query_times["kd_tree"])
+        runtimes["lsh"].append(query_times["lsh"])
 
     return runtimes
 
@@ -122,27 +130,32 @@ def unique_range_query(trees):
 
 #=========================================================================================
 
-def lsh_run(ids):
+def lsh_run(ids, _threshold, save_results):
     educations = []
     for id in ids:
         educations.append(jdata[id]["education"])
 
-    groups = lsh.shing_minhash_lsh(educations, k=3, C=100, B=50, threshold=0.3, plot_threshold=0)
+    t0 = perf_counter()
+    groups = lsh.shing_minhash_lsh(educations, k=3, C=100, B=50, threshold=_threshold, plot_threshold=0)
+    t1 = perf_counter()
+    
+    if save_results:
+        similar_ids = []
+        for g in groups:
+            id_g = []
+            for i in g:
+                id_g.append(ids[i])
+            similar_ids.append(id_g)
 
-    similar_ids = []
-    for g in groups:
-        id_g = []
-        for i in g:
-            id_g.append(ids[i])
-        similar_ids.append(id_g)
-
-    with open("lsh.txt", "w") as f:
-        for sids in similar_ids:
-            if len(sids)>20:
-                continue
-            for sid in sids:
-                f.write(str(sid)+": "+jdata[sid]["name"]+"\n")
-            f.write("\n")
+        with open("lsh.txt", "w") as f:
+            for sids in similar_ids:
+                if len(sids)>20:
+                    continue
+                for sid in sids:
+                    f.write(str(sid)+": "+jdata[sid]["name"]+"\n")
+                f.write("\n")
+                
+    return t1-t0
 
 #=========================================================================================
             
@@ -212,11 +225,18 @@ if __name__ == "__main__":
         quad_time = sum(result["quad_tree"])/num_experiments
         kd_time = sum(result["kd_tree"])/num_experiments
 
+        #Get the average for the experiments where LSH did not give zero time
+        non_zeros = sum([1 for t in result["lsh"] if t > 0])
+
+        lsh_time = sum(result["lsh"])/(non_zeros if non_zeros > 0 else num_experiments)
+
         print(f"Average query times for {num_experiments} queries\n==========================================")
         print(f"> R-Tree: {r_time}\n")
         print(f"> Range Tree: {range_time}\n")
         print(f"> Quad Tree: {quad_time}\n")
         print(f"> KD Tree: {kd_time}\n")
+
+        print(f"\nAverage LSH time: {lsh_time}\n")
 
         print()
 
@@ -229,9 +249,12 @@ if __name__ == "__main__":
         #Export times to excel
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        excel_data = {"R-Tree": result["r_tree"], "Range Tree": result["range_tree"], "Quad Tree": result["quad_tree"], "KD Tree": result["kd_tree"]}
+        num_results = list((map(lambda x: len(x), result["ids"])))
+
+        excel_data = {"R-Tree": result["r_tree"], "Range Tree": result["range_tree"], "Quad Tree": result["quad_tree"], "KD Tree": result["kd_tree"], "# results": num_results, "LSH": result["lsh"]}
         df = pd.DataFrame(excel_data, index=list(range(num_experiments)))
-        df.to_excel("query_times.xlsx", index_label="Query")
+
+        #df.to_excel("query_times.xlsx", index_label="Query")
 
         #Export queries to excel
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -243,7 +266,10 @@ if __name__ == "__main__":
                 excel_queries[key].append(value)
 
         df_queries = pd.DataFrame(excel_queries, index=list(range(num_experiments)))
-        df_queries.to_excel("queries.xlsx", index_label = "Query")
+
+        combined_df = pd.concat([df, df_queries], axis=1)
+
+        combined_df.to_excel("queries.xlsx", index_label = "Query")
 
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -264,6 +290,13 @@ if __name__ == "__main__":
         data = {"R-Tree": times["r_tree"], "Range Tree": times["range_tree"], "Quad Tree": times["quad_tree"], "KD Tree": times["kd_tree"]}
         make_plot("single_query_time.png", data, "Tree", "Time", "Query time for all trees")
 
-        lsh_run(ids)
+        #LSH
+        threshold = float(input("Give similarity threshold [0-1]: "))
+
+        t = lsh_run(ids, threshold, True)
+
+        print(f"\nLSH time: {t}\n")
+
+        print("Saving results to 'lsh.txt'.\n")
 
     else: print("Invalid Input, Please try again!")
